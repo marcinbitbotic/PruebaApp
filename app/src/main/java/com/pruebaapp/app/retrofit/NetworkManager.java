@@ -2,6 +2,7 @@ package com.pruebaapp.app.retrofit;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.pruebaapp.app.constants.Constants;
 import com.pruebaapp.app.model.UserModel;
 
 import java.util.List;
@@ -33,11 +34,11 @@ public class NetworkManager {
 				.addInterceptor(interceptor).build();
 
 		//Date Format is : 1982-09-13T04:00:00
-		Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+		Gson gson = new GsonBuilder().setDateFormat(Constants.DATE_FORMAT)
 				.create();
 
 		api = new Retrofit.Builder()
-				.baseUrl("http://hello-world.innocv.com/api/")
+				.baseUrl(Constants.BASE_URL)
 				.addConverterFactory(GsonConverterFactory.create(gson))
 				.client(client)
 				.build()

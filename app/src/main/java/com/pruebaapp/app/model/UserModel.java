@@ -2,7 +2,8 @@ package com.pruebaapp.app.model;
 
 import com.google.gson.annotations.SerializedName;
 
-import java.sql.Date;
+import java.util.Date;
+
 
 /**
  * Created by Marcin Pogorzelski on 03/08/2017.

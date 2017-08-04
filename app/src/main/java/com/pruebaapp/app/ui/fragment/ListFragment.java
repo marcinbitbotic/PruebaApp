@@ -7,6 +7,8 @@ import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +18,7 @@ import android.widget.Toast;
 
 import com.pruebaapp.app.R;
 import com.pruebaapp.app.adapter.UserModelAdapter;
+import com.pruebaapp.app.components.ClearableEditText;
 import com.pruebaapp.app.model.UserModel;
 import com.pruebaapp.app.retrofit.NetworkManager;
 import com.pruebaapp.app.ui.activity.MainActivity;
@@ -37,13 +40,13 @@ public class ListFragment extends Fragment implements DataManagerInterface {
 	private ProgressBar progressBar;
 	private UserModelAdapter adapter;
 	private SwipeRefreshLayout swipeRefresh;
+	private ClearableEditText searchBarName;
 	private FloatingActionButton floatingActionButton;
 
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-		View rootView = inflater.inflate(R.layout.frag_list, container, false);
-		return rootView;
+		return inflater.inflate(R.layout.frag_list, container, false);
 	}
 
 	@Override
@@ -54,11 +57,32 @@ public class ListFragment extends Fragment implements DataManagerInterface {
 		swipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.swipe_refresh);
 		progressBar = (ProgressBar) view.findViewById(R.id.progress_bar);
 		floatingActionButton = (FloatingActionButton) view.findViewById(R.id.fab);
+		searchBarName = (ClearableEditText) view.findViewById(R.id.search_bar_name);
+
+		searchBarName.addTextChangedListener(textWatcher);
 
 		setupSwipeRefresh();
 		setupRecyclerView();
 		setupFloatingActionButton();
 	}
+
+	private TextWatcher textWatcher = new TextWatcher() {
+		@Override
+		public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+		}
+
+		@Override
+		public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+		}
+
+		@Override
+		public void afterTextChanged(Editable editable) {
+			if(adapter!=null)
+				adapter.getFilter().filter(editable.toString());
+		}
+	};
 
 	@Override
 	public void fetchData() {
@@ -71,6 +95,7 @@ public class ListFragment extends Fragment implements DataManagerInterface {
 			public void onResponse(Call<List<UserModel>> call, Response<List<UserModel>> response) {
 
 				adapter = new UserModelAdapter(response.body(), getActivity());
+				adapter.getFilter().filter(searchBarName.getText().toString());
 				adapter.setOnItemClickListener(onItemClickListener);
 
 				recyclerView.setAdapter(adapter);
@@ -80,7 +105,7 @@ public class ListFragment extends Fragment implements DataManagerInterface {
 			@Override
 			public void onFailure(Call<List<UserModel>> call, Throwable t) {
 				progressBar.setVisibility(View.GONE);
-				Toast.makeText(getActivity(), "No se han podido cargar datos", Toast.LENGTH_LONG).show();
+				Toast.makeText(getActivity(), getString(R.string.error_load_data), Toast.LENGTH_LONG).show();
 			}
 		});
 	}
@@ -91,6 +116,8 @@ public class ListFragment extends Fragment implements DataManagerInterface {
 			@Override
 			public void onRefresh() {
 				swipeRefresh.setRefreshing(false);
+				progressBar.setVisibility(View.VISIBLE);
+				fetchData();
 			}
 		});
 	}

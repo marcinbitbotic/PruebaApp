@@ -6,25 +6,30 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.TextView;
 
 import com.pruebaapp.app.R;
 import com.pruebaapp.app.model.UserModel;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by Marcin Pogorzelski on 03/08/2017.
  */
 
-public class UserModelAdapter extends RecyclerView.Adapter<UserModelAdapter.UserViewHolder> {
+public class UserModelAdapter extends RecyclerView.Adapter<UserModelAdapter.UserViewHolder> implements Filterable {
 
 	private List<UserModel> userList;
+	private List<UserModel> orginalList;
 	private Context context;
 	private AdapterView.OnItemClickListener onItemClickListener;
 
 	public UserModelAdapter(List<UserModel> userList, Context context) {
 		this.userList = userList;
+		this.orginalList=userList;
 		this.context = context;
 	}
 
@@ -53,6 +58,47 @@ public class UserModelAdapter extends RecyclerView.Adapter<UserModelAdapter.User
 	@Override
 	public int getItemCount() {
 		return userList.size();
+	}
+
+
+	@Override
+	public Filter getFilter() {
+
+		return new Filter() {
+
+			@Override
+			protected FilterResults performFiltering(CharSequence constraint) {
+				List<UserModel> filteredList = null;
+				filteredList = new ArrayList<UserModel>();
+
+				final FilterResults results = new FilterResults();
+
+
+				if(constraint.toString().isEmpty())
+				{
+					filteredList = orginalList;
+
+				}else{
+					for (final UserModel user : orginalList) {
+						if (user.getName().toLowerCase().contains(constraint.toString().toLowerCase())) {
+							filteredList.add(user);
+						}
+					}
+				}
+
+
+
+				results.values = filteredList;
+				results.count = filteredList.size();
+				return results;
+			}
+
+			@Override
+			protected void publishResults(CharSequence constraint, FilterResults results) {
+				userList = (ArrayList<UserModel>) results.values;
+				notifyDataSetChanged();
+			}
+		};
 	}
 
 	class UserViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
