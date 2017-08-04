@@ -1,11 +1,11 @@
-package com.pruebaapp.app.ui.fragment;
+package com.pruebaapp.app.ui.DetailUser;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,23 +16,17 @@ import android.widget.Toast;
 
 import com.pruebaapp.app.R;
 import com.pruebaapp.app.model.UserModel;
-import com.pruebaapp.app.retrofit.NetworkManager;
-import com.pruebaapp.app.ui.contract.DataManagerInterface;
 import com.pruebaapp.app.utils.DateUtils;
 
 import java.util.Date;
-
-import okhttp3.ResponseBody;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 /**
  * Created by Marcin Pogorzelski on 03/08/2017.
  */
 
-public class DetailFragment extends Fragment implements DataManagerInterface {
+public class DetailFragment extends Fragment implements MvpDetailUserView {
 
+	DetailUserPresenter<MvpDetailUserView> presenter;
 	private Button btnEdit;
 	private Button btnCreate;
 	private Button btnRemove;
@@ -41,7 +35,6 @@ public class DetailFragment extends Fragment implements DataManagerInterface {
 	private EditText editFecha;
 	private int id;
 
-
 	public static DetailFragment newInstance(int id) {
 		DetailFragment fargment = new DetailFragment();
 		fargment.setId(id);
@@ -49,29 +42,20 @@ public class DetailFragment extends Fragment implements DataManagerInterface {
 	}
 
 	@Override
-	public void fetchData() {
-		Call<UserModel> request = NetworkManager.getInstance().getUserByID(id);
+	public void onDetach() {
+		super.onDetach();
+		presenter.onDetach();
 
-		request.enqueue(new Callback<UserModel>() {
+	}
 
-			@Override
-			public void onResponse(Call<UserModel> call, Response<UserModel> response) {
+	public DetailFragment() {
+		presenter = new DetailUserPresenter<MvpDetailUserView>();
+	}
 
-				UserModel editUser = response.body();
-
-				if(editUser!=null){
-					editNombre.setText(editUser.getName());
-					labelId.setText(""+editUser.getId());
-					editFecha.setText(DateUtils.DateToString(editUser.getBirthDate()));
-				}
-
-			}
-
-			@Override
-			public void onFailure(Call<UserModel> call, Throwable t) {
-				Toast.makeText(getActivity(), getString(R.string.error_load_data), Toast.LENGTH_LONG).show();
-			}
-		});
+	@Override
+	public void onAttach(Context context) {
+		super.onAttach(context);
+		presenter.onAttach(DetailFragment.this);
 	}
 
 	@Override
@@ -84,7 +68,7 @@ public class DetailFragment extends Fragment implements DataManagerInterface {
 		super.onActivityCreated(savedInstanceState);
 
 		if (id > 0) {
-			fetchData();
+			presenter.loadData();
 		}else{
 			String current = DateUtils.DateToString(new Date());
 			editFecha.setText(current);
@@ -132,7 +116,7 @@ public class DetailFragment extends Fragment implements DataManagerInterface {
 					public void onClick(DialogInterface dialog, int which) {
 						switch (which){
 							case DialogInterface.BUTTON_POSITIVE:
-								removeUser(id);
+								presenter.removeUser(id);
 								break;
 
 							case DialogInterface.BUTTON_NEGATIVE:
@@ -156,7 +140,8 @@ public class DetailFragment extends Fragment implements DataManagerInterface {
 		});
 	}
 
-	private void handleClick(){
+	@Override
+	public void handleClick(){
 
 		String name = editNombre.getText().toString().trim();
 		String fecha = editFecha.getText().toString().trim();
@@ -168,14 +153,55 @@ public class DetailFragment extends Fragment implements DataManagerInterface {
 			user.setBirthDate(DateUtils.parseDateFromString(fecha));
 
 			if (id > 0) {
-				editUser(user);
+				presenter.editUser(user);
 			}else {
-				createUser(user);
+				presenter.createUser(user);
 			}
 		}
 	}
 
-	private boolean validData(String name,String fecha){
+	@Override
+	public void setData(UserModel users) {
+
+		if(users!=null){
+			editNombre.setText(users.getName());
+			labelId.setText(""+users.getId());
+			editFecha.setText(DateUtils.DateToString(users.getBirthDate()));
+		}
+	}
+
+	@Override
+	public void onBackPressed() {
+		getActivity().onBackPressed();
+	}
+
+	@Override
+	public int getUserID() {
+		return id;
+	}
+
+	@Override
+	public void onSuccessMessage(String message) {
+		Toast.makeText(getActivity(),message, Toast.LENGTH_LONG).show();
+	}
+
+	@Override
+	public void showLoading() {
+		//Not implemented
+	}
+
+	@Override
+	public void hideLoading() {
+		//Not implemented
+	}
+
+	@Override
+	public void onError(String message) {
+		Toast.makeText(getActivity(), message, Toast.LENGTH_LONG).show();
+	}
+
+	@Override
+	public boolean validData(String name,String fecha){
 
 		boolean isValid = true;
 
@@ -197,68 +223,6 @@ public class DetailFragment extends Fragment implements DataManagerInterface {
 		}
 
 		return isValid;
-	}
-
-	private void createUser(UserModel user){
-
-		Call<UserModel> call = NetworkManager.getInstance().createUser(user);
-
-		call.enqueue(new Callback<UserModel>() {
-
-			@Override
-			public void onResponse(Call<UserModel> call, Response<UserModel> response) {
-				Toast.makeText(getActivity(), R.string.frag_detail_create_success, Toast.LENGTH_LONG).show();
-				getActivity().onBackPressed();
-			}
-
-			@Override
-			public void onFailure(Call<UserModel> call, Throwable t) {
-				Toast.makeText(getActivity(), R.string.frag_detail_create_error, Toast.LENGTH_LONG).show();
-
-			}
-		});
-
-	}
-
-	private void editUser(UserModel user){
-
-		Call<UserModel> call = NetworkManager.getInstance().editUser(user);
-
-		call.enqueue(new Callback<UserModel>() {
-
-			@Override
-			public void onResponse(Call<UserModel> call, Response<UserModel> response) {
-				Toast.makeText(getActivity(), R.string.frag_detail_edit_success, Toast.LENGTH_LONG).show();
-				getActivity().onBackPressed();
-			}
-
-			@Override
-			public void onFailure(Call<UserModel> call, Throwable t) {
-				Toast.makeText(getActivity(), R.string.frag_detail_edit_error, Toast.LENGTH_LONG).show();
-
-			}
-		});
-
-	}
-
-	private void removeUser(int id) {
-
-		Call<ResponseBody> call = NetworkManager.getInstance().removeUser(id);
-
-		call.enqueue(new Callback<ResponseBody>() {
-
-			@Override
-			public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-				Toast.makeText(getActivity(), R.string.frag_detail_remove_success, Toast.LENGTH_LONG).show();
-				getActivity().onBackPressed();
-			}
-
-			@Override
-			public void onFailure(Call<ResponseBody> call, Throwable t) {
-				Toast.makeText(getActivity(), R.string.frag_detail_remove_error, Toast.LENGTH_LONG).show();
-
-			}
-		});
 	}
 
 	public void setId(int id) {

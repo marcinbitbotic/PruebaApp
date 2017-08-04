@@ -7,7 +7,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
 import com.pruebaapp.app.R;
-import com.pruebaapp.app.ui.fragment.ListFragment;
+import com.pruebaapp.app.ui.usersList.ListFragment;
 
 public class MainActivity extends AppCompatActivity {
 

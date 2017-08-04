@@ -1,5 +1,6 @@
-package com.pruebaapp.app.ui.fragment;
+package com.pruebaapp.app.ui.usersList;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
@@ -20,21 +21,18 @@ import com.pruebaapp.app.R;
 import com.pruebaapp.app.adapter.UserModelAdapter;
 import com.pruebaapp.app.components.ClearableEditText;
 import com.pruebaapp.app.model.UserModel;
-import com.pruebaapp.app.retrofit.NetworkManager;
 import com.pruebaapp.app.ui.activity.MainActivity;
-import com.pruebaapp.app.ui.contract.DataManagerInterface;
+import com.pruebaapp.app.ui.DetailUser.DetailFragment;
 
 import java.util.List;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 /**
  * Created by Marcin Pogorzelski on 03/08/2017.
  */
 
-public class ListFragment extends Fragment implements DataManagerInterface {
+public class ListFragment extends Fragment implements MvpUserListView {
+
+	UserListPresenter<MvpUserListView> presenter;
 
 	private RecyclerView recyclerView;
 	private ProgressBar progressBar;
@@ -43,6 +41,21 @@ public class ListFragment extends Fragment implements DataManagerInterface {
 	private ClearableEditText searchBarName;
 	private FloatingActionButton floatingActionButton;
 
+	public ListFragment() {
+		presenter = new UserListPresenter<MvpUserListView>();
+	}
+
+	@Override
+	public void onDetach() {
+		super.onDetach();
+		presenter.onDetach();
+	}
+
+	@Override
+	public void onAttach(Context context) {
+		super.onAttach(context);
+		presenter.onAttach(ListFragment.this);
+	}
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -85,39 +98,13 @@ public class ListFragment extends Fragment implements DataManagerInterface {
 	};
 
 	@Override
-	public void fetchData() {
-
-		Call<List<UserModel>> request = NetworkManager.getInstance().getAll();
-
-		request.enqueue(new Callback<List<UserModel>>() {
-
-			@Override
-			public void onResponse(Call<List<UserModel>> call, Response<List<UserModel>> response) {
-
-				adapter = new UserModelAdapter(response.body(), getActivity());
-				adapter.getFilter().filter(searchBarName.getText().toString());
-				adapter.setOnItemClickListener(onItemClickListener);
-
-				recyclerView.setAdapter(adapter);
-				progressBar.setVisibility(View.GONE);
-			}
-
-			@Override
-			public void onFailure(Call<List<UserModel>> call, Throwable t) {
-				progressBar.setVisibility(View.GONE);
-				Toast.makeText(getActivity(), getString(R.string.error_load_data), Toast.LENGTH_LONG).show();
-			}
-		});
-	}
-
 	public void setupSwipeRefresh() {
 		swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
 
 			@Override
 			public void onRefresh() {
 				swipeRefresh.setRefreshing(false);
-				progressBar.setVisibility(View.VISIBLE);
-				fetchData();
+				presenter.loadData();
 			}
 		});
 	}
@@ -142,6 +129,14 @@ public class ListFragment extends Fragment implements DataManagerInterface {
 		});
 	}
 
+	@Override
+	public void setData(List<UserModel> users) {
+		adapter = new UserModelAdapter(users, getActivity());
+		adapter.getFilter().filter(searchBarName.getText().toString());
+		adapter.setOnItemClickListener(onItemClickListener);
+		recyclerView.setAdapter(adapter);
+	}
+
 	public void setupRecyclerView() {
 
 		recyclerView.setHasFixedSize(true);
@@ -153,9 +148,21 @@ public class ListFragment extends Fragment implements DataManagerInterface {
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
-
-		progressBar.setVisibility(View.VISIBLE);
-		fetchData();
+		presenter.loadData();
 	}
 
+	@Override
+	public void showLoading() {
+		progressBar.setVisibility(View.VISIBLE);
+	}
+
+	@Override
+	public void hideLoading() {
+		progressBar.setVisibility(View.GONE);
+	}
+
+	@Override
+	public void onError(String message) {
+		Toast.makeText(getActivity(), getString(R.string.error_load_data), Toast.LENGTH_LONG).show();
+	}
 }
