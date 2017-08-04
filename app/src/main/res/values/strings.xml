@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">PruebaApp</string>
+
+    <!-- ListFragment -->
+    <string name="frag_list_name">Nombre : </string>
+
+    <!-- Detail Fragment -->
+    <string name="frag_detail_id">id : </string>
+    <string name="frag_detail_name">Nombre : </string>
+    <string name="frag_detail_fecha">Fecha : </string>
+
+</resources>
